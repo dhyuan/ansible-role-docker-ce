@@ -76,3 +76,22 @@
     owner: root
     group: root
     mode: '0644'
+
+- name: Add Aliyun Docker official GPG key
+  become: true
+  apt_key:
+    url: http://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg
+    state: present
+  register: _pkg_result
+  until: _pkg_result is succeeded
+  when:
+    - docker_network_access | bool
+    - (_docker_os_dist == "Ubuntu" and _docker_os_dist_major_version | int > 14) or
+      (_docker_os_dist == "Debian" and _docker_os_dist_major_version | int > 7)
+
+- name: Add Aliyun Docker CE repository with correct channels (Ubuntu/Debian)
+  become: true
+  lineinfile:
+    path: /etc/apt/sources.list.d/docker-ce.list
+    line: "deb [arch={{ _docker_os_arch|lower }}] http://mirrors.aliyun.com/docker-ce/linux/{{ _docker_os_dist|lower }} {{ ansible_lsb.codename }} stable"
+    insertbefore: BOF
